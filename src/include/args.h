@@ -6,32 +6,34 @@
 #include <unordered_set>
 using namespace std;
 // 100% claude code generated I do not like flag logic
-enum class Command { CREATE, DELETE, UPDATE, INSERT, QUERY, NONE };
+enum class Command { CREATE, DELETE, EDIT, UPDATE, INSERT, QUERY, NONE };
 
 struct ParsedArgs {
     Command command = Command::NONE;
-    string tableName;
+    string table_name;
     unordered_map<string, vector<string>> flags;
 };
 
 const unordered_map<Command, unordered_set<string>> VALID_FLAGS = {
     {Command::CREATE, {"--fields", "--primary-key", "--sort-key", "--add-index", "--add-index-pk", "--add-index-sk", "--add-index-projection"}},
     {Command::DELETE, {}},
-    {Command::UPDATE, {"--add-fields", "--remove-fields", "--delete-index", "--add-index", "--add-index-pk", "--add-index-sk", "--add-index-projection"}},
+    {Command::EDIT, {"--add-fields", "--remove-fields", "--delete-index", "--add-index", "--add-index-pk", "--add-index-sk", "--add-index-projection"}},
+    {Command::UPDATE, {"--at", "--use-index"}},
     {Command::INSERT, {"--data"}},
     {Command::QUERY,  {"--query-condition", "--use-index", "--output-fields"}},
 };
 
-Command parseCommand(const string& s) {
+Command parse_command(const string& s) {
     if (s == "--create") return Command::CREATE;
     if (s == "--delete") return Command::DELETE;
+    if (s == "--edit")   return Command::EDIT;
     if (s == "--update") return Command::UPDATE;
     if (s == "--insert") return Command::INSERT;
     if (s == "--query")  return Command::QUERY;
     return Command::NONE;
 }
 
-ParsedArgs parseArgs(int argc, char** argv) {
+ParsedArgs parse_args(int argc, char** argv) {
     ParsedArgs args;
 
     if (argc < 2) {
@@ -39,10 +41,10 @@ ParsedArgs parseArgs(int argc, char** argv) {
         return args;
     }
 
-    args.command = parseCommand(argv[1]);
+    args.command = parse_command(argv[1]);
     if (args.command == Command::NONE) {
         cerr << "Error: unknown command '" << argv[1] << "'" << endl;
-        cerr << "Valid commands: --create, --delete, --update, --insert, --query" << endl;
+        cerr << "Valid commands: --create, --delete, --edit, --update, --insert, --query" << endl;
         return args;
     }
 
@@ -51,44 +53,44 @@ ParsedArgs parseArgs(int argc, char** argv) {
         return {Command::NONE, "", {}};
     }
 
-    args.tableName = argv[2];
+    args.table_name = argv[2];
 
     // Parse sub-flags and their values from argv[3..]
-    string currentFlag;
+    string current_flag;
     for (int i = 3; i < argc; i++) {
         string token = argv[i];
 
         // Check if this token is a new flag (starts with --)
         // but only if we're not inside a brace block
-        bool isFlag = false;
+        bool is_flag = false;
         if (token.rfind("--", 0) == 0) {
             // Look back at collected values for the current flag
             // and count brace depth to see if we're inside a {...} block
-            int braceDepth = 0;
-            if (!currentFlag.empty()) {
-                for (const string& val : args.flags[currentFlag]) {
+            int brace_depth = 0;
+            if (!current_flag.empty()) {
+                for (const string& val : args.flags[current_flag]) {
                     for (char c : val) {
-                        if (c == '{') braceDepth++;
-                        else if (c == '}') braceDepth--;
+                        if (c == '{') brace_depth++;
+                        else if (c == '}') brace_depth--;
                     }
                 }
             }
-            if (braceDepth <= 0) {
-                isFlag = true;
+            if (brace_depth <= 0) {
+                is_flag = true;
             }
         }
 
-        if (isFlag) {
-            currentFlag = token;
-            if (args.flags.find(currentFlag) == args.flags.end()) {
-                args.flags[currentFlag] = {};
+        if (is_flag) {
+            current_flag = token;
+            if (args.flags.find(current_flag) == args.flags.end()) {
+                args.flags[current_flag] = {};
             }
         } else {
-            if (currentFlag.empty()) {
+            if (current_flag.empty()) {
                 cerr << "Error: unexpected value '" << token << "' before any flag" << endl;
                 return {Command::NONE, "", {}};
             }
-            args.flags[currentFlag].push_back(token);
+            args.flags[current_flag].push_back(token);
         }
     }
 
@@ -104,7 +106,7 @@ ParsedArgs parseArgs(int argc, char** argv) {
     return args;
 }
 
-bool validateArgs(const ParsedArgs& args) {
+bool validate_args(const ParsedArgs& args) {
     switch (args.command) {
         case Command::CREATE: {
             if (args.flags.find("--fields") == args.flags.end()) {
@@ -119,13 +121,20 @@ bool validateArgs(const ParsedArgs& args) {
         }
         case Command::DELETE:
             break;
+        case Command::EDIT: {
+            bool has_mod = args.flags.find("--add-fields") != args.flags.end()
+                        || args.flags.find("--remove-fields") != args.flags.end()
+                        || args.flags.find("--delete-index") != args.flags.end()
+                        || args.flags.find("--add-index") != args.flags.end();
+            if (!has_mod) {
+                cerr << "Error: --edit requires at least one modification flag (--add-fields, --remove-fields, --delete-index, --add-index)" << endl;
+                return false;
+            }
+            break;
+        }
         case Command::UPDATE: {
-            bool hasMod = args.flags.find("--add-fields") != args.flags.end()
-                       || args.flags.find("--remove-fields") != args.flags.end()
-                       || args.flags.find("--delete-index") != args.flags.end()
-                       || args.flags.find("--add-index") != args.flags.end();
-            if (!hasMod) {
-                cerr << "Error: --update requires at least one modification flag (--add-fields, --remove-fields, --delete-index, --add-index)" << endl;
+            if (args.flags.find("--at") == args.flags.end()) {
+                cerr << "Error: --update requires --at" << endl;
                 return false;
             }
             break;

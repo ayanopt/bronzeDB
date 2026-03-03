@@ -14,11 +14,16 @@ int main(int argc, char ** argv) {
 
     ./bronzedb --delete monkeys
 
-    ./bronzedb --update monkeys
+    ./bronzedb --edit monkeys
         --add-fields '{sex:string}'                               # throws on field name collision
         --remove-fields '{fur_color}'                             # throws on primary key deletion, or index pk deletion
         --delete-index                                            # throws on non existent index
         --add-index ...                                           # throws on index name collision
+    
+    ./bronzedb --update monkeys
+        --at '{monkey_id:=:"monkey1"}'                            # throws if not pk
+        --use-index rabid_species
+        --at '{species:=:"lemur", is_rabid:=:1}'                  # throws if not index pk
 
     ./bronzedb --insert monkeys
         --data '{
@@ -40,13 +45,16 @@ int main(int argc, char ** argv) {
         --query-condition '{age:<=:4}'
         --use-index rabid_species                                 # throws on non existent index
         --query-condition '{species:=:"lemur", is_rabid:=:1}'     # specify all fields in an index pk, if use-index is provided
-        --output-fields '{monkey_id, fur_color}'                  # specify fields to output in query (throws on non existent field in database or index projection)
+        --output-fields '{monkey_id, fur_color}'                  # default all, specify fields to output in query (throws on non existent field in database or index projection)
     */
 
-    ParsedArgs args = parseArgs(argc, argv);
+    ParsedArgs args = parse_args(argc, argv);
     if (args.command == Command::NONE) return 1;
-    if (!validateArgs(args)) return 1;
+    if (!validate_args(args)) return 1;
 
+    if (args.command == Command::CREATE) {
+        create_table(args)
+    }
 
     return 0;
 }
