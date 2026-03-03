@@ -1,5 +1,5 @@
 CXX = g++
-CXXFLAGS = -Wall -std=c++17
+CXXFLAGS = -Wall -std=c++17 -I$(SRC_DIR)/include
 
 SRC_DIR = ..
 TARGET = bronzedb
