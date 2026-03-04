@@ -1,7 +1,6 @@
 #pragma once
 #include "args.h"
 #include "types.h"
-#include "table.h"
 #include "storage.h"
 #include "parser.h"
 #include <iostream>
@@ -22,30 +21,38 @@ inline void insert_row(const ParsedArgs& args) {
         return;
     }
 
-    Table t = load_table(name);
+    // Load schema only — O(schema_size), not O(file_size)
+    TableSchema schema = load_schema_only(name);
 
     string combined = join_tokens(data_it->second);
-    Row row = parse_json_row(combined, t.schema);
+    Row row = parse_json_row(combined, schema);
 
-    // Validate all required fields
-    for (const auto& [fname, ftype] : t.schema.fields) {
+    // Fill missing fields with defaults
+    for (const auto& [fname, ftype] : schema.fields) {
         if (row.find(fname) == row.end()) {
-            // Missing field - insert default
             switch (ftype) {
-                case FieldType::INT:    row[fname] = 0;        break;
-                case FieldType::DOUBLE: row[fname] = 0.0;      break;
+                case FieldType::INT:    row[fname] = 0;          break;
+                case FieldType::DOUBLE: row[fname] = 0.0;        break;
                 case FieldType::STRING: row[fname] = string(""); break;
             }
         }
     }
 
+    // Validate PK fields present
+    for (const auto& pk : schema.pk_fields) {
+        if (row.find(pk) == row.end()) {
+            cerr << "Error: missing primary key field: " << pk << endl;
+            return;
+        }
+    }
+
+    // Append single row — O(1) I/O, no file rewrite
     try {
-        t.insert(row);
+        append_row_to_file(name, row, schema);
     } catch (const exception& e) {
         cerr << "Error: " << e.what() << endl;
         return;
     }
 
-    save_table(t);
     cout << "Inserted row into '" << name << "'" << endl;
 }
