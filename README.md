@@ -24,7 +24,9 @@ make clean
 
 ```bash
 ./bronzedb --create monkeys
-    --fields '{monkey_id:string, species:string, age:int, fur_color:string, is_rabid:int, tail_length:double, metadata:string}'
+    --serverless false
+    --fields '{monkey_id:string, species:string, age:int, fur_color:string, is_rabid:int, tail_length:double|null, metadata:string, contract_expiry:int|null}'
+    --ttl contract_expiry                                     # optional, field must be int|null
     --primary-key '{monkey_id}'                               # alternatively for composite pk '{tail_length, species}'
     --sort-key age                                            # optional, default none
     --add-index rabid_species
@@ -39,6 +41,7 @@ make clean
     --remove-fields '{fur_color}'                             # throws on primary key deletion, or index pk deletion
     --delete-index                                            # throws on non existent index
     --add-index ...                                           # throws on index name collision
+    --serverless true
 
 ./bronzedb --update monkeys
     --at '{monkey_id:=:"monkey1"}'                            # throws if not pk

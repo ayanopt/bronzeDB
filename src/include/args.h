@@ -15,7 +15,7 @@ struct ParsedArgs {
 };
 
 const unordered_map<Command, unordered_set<string>> VALID_FLAGS = {
-    {Command::CREATE, {"--fields", "--primary-key", "--sort-key", "--add-index", "--add-index-pk", "--add-index-sk", "--add-index-projection", "--serverless"}},
+    {Command::CREATE, {"--fields", "--primary-key", "--sort-key", "--ttl", "--add-index", "--add-index-pk", "--add-index-sk", "--add-index-projection", "--serverless"}},
     {Command::DELETE, {}},
     {Command::EDIT, {"--add-fields", "--remove-fields", "--delete-index", "--add-index", "--add-index-pk", "--add-index-sk", "--add-index-projection", "--serverless"}},
     {Command::UPDATE, {"--at", "--use-index"}},

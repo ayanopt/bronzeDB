@@ -1,11 +1,17 @@
 #include "utils.h"
 #include "args.h"
-
+#include "create_table.h"
+#include "delete_table.h"
+#include "edit_table.h"
+#include "insert_row.h"
+#include "query_table.h"
+#include "update_table.h"
 int main(int argc, char ** argv) {
     /*
     ./bronzedb --create monkeys
         --serverless false
-        --fields '{monkey_id:string, species:string, age:int, fur_color:string, is_rabid:int, tail_length:double, metadata:string}'
+        --fields '{monkey_id:string, species:string, age:int, fur_color:string, is_rabid:int, tail_length:double|null, metadata:string, contract_expiry:int|null}'
+        --ttl contract_expiry
         --primary-key '{monkey_id}'                               # alternatively for composite pk '{tail_length, species}'
         --sort-key age                                            # optional, default none
         --add-index rabid_species
@@ -54,9 +60,13 @@ int main(int argc, char ** argv) {
     if (args.command == Command::NONE) return 1;
     if (!validate_args(args)) return 1;
 
-    if (args.command == Command::CREATE) {
-        create_table(args)
-    }
+    if (args.command == Command::CREATE) create_table(args);
+    if (args.command == Command::DELETE) delete_table(args);
+    if (args.command == Command::EDIT) edit_table(args);
+    if (args.command == Command::INSERT) insert_row(args);
+    if (args.command == Command::QUERY) query_table(args);
+    if (args.command == Command::UPDATE) update_table(args);
+
 
     return 0;
 }
