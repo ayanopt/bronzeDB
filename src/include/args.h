@@ -15,9 +15,9 @@ struct ParsedArgs {
 };
 
 const unordered_map<Command, unordered_set<string>> VALID_FLAGS = {
-    {Command::CREATE, {"--fields", "--primary-key", "--sort-key", "--add-index", "--add-index-pk", "--add-index-sk", "--add-index-projection"}},
+    {Command::CREATE, {"--fields", "--primary-key", "--sort-key", "--add-index", "--add-index-pk", "--add-index-sk", "--add-index-projection", "--serverless"}},
     {Command::DELETE, {}},
-    {Command::EDIT, {"--add-fields", "--remove-fields", "--delete-index", "--add-index", "--add-index-pk", "--add-index-sk", "--add-index-projection"}},
+    {Command::EDIT, {"--add-fields", "--remove-fields", "--delete-index", "--add-index", "--add-index-pk", "--add-index-sk", "--add-index-projection", "--serverless"}},
     {Command::UPDATE, {"--at", "--use-index"}},
     {Command::INSERT, {"--data"}},
     {Command::QUERY,  {"--query-condition", "--use-index", "--output-fields"}},
@@ -125,9 +125,10 @@ bool validate_args(const ParsedArgs& args) {
             bool has_mod = args.flags.find("--add-fields") != args.flags.end()
                         || args.flags.find("--remove-fields") != args.flags.end()
                         || args.flags.find("--delete-index") != args.flags.end()
-                        || args.flags.find("--add-index") != args.flags.end();
+                        || args.flags.find("--add-index") != args.flags.end()
+                        || args.flags.find("--serverless") != args.flags.end();
             if (!has_mod) {
-                cerr << "Error: --edit requires at least one modification flag (--add-fields, --remove-fields, --delete-index, --add-index)" << endl;
+                cerr << "Error: --edit requires at least one modification flag (--add-fields, --remove-fields, --delete-index, --add-index, --serverless)" << endl;
                 return false;
             }
             break;
